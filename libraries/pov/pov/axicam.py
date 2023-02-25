@@ -1,0 +1,98 @@
+import signal
+from pov import pov
+from pathlib import Path
+import fn
+import time
+import vpype
+from pyaxidraw import axidraw 
+from contextlib import closing
+from tqdm import tqdm
+
+## this is a kinda dumbed down version of this taken from another repo, too lazy to really refactor 
+
+class GracefulExiter():
+    # definitely jacked this from somewhere on stack overflow
+    def __init__(self):
+        self.state = False
+        signal.signal(signal.SIGINT, self.change_state)
+
+    def change_state(self, signum, frame):
+        print("exit flag set to True (repeat to exit now)")
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        self.state = True
+
+    def exit(self):
+        return self.state
+    
+    
+class AxiCam(object):
+    
+    def __init__(
+        self, 
+        svg_path=None,
+        image_savedir=None,
+        plot_id=None,
+        cam=None,
+        camera_index=None,
+        ):
+        if plot_id == None:
+            plot_id = fn.get_current_plot_id()
+        self.plot_id = plot_id
+        
+        assert svg_path is not None, 'gimme a path'
+        self.svg_path = svg_path    
+        self.ad = axidraw.AxiDraw()
+        
+        self.ad.plot_setup(self.svg_path)
+        self.ad.options.mode = "layers"
+        self.ad.options.units = 2
+        self.ad.update()
+        
+        self.doc = vpype.read_multilayer_svg(self.svg_path, 0.1)
+        self.image_savedir = image_savedir
+        if cam is None:
+            cam = self.init_cam(savedir=self.image_savedir, camera_index=camera_index)
+        self.cam = cam
+        
+    @property
+    def n_layers(self):
+        return len(self.doc.layers)
+        
+    def plot_layer(self, cam, layer_number, wait_time=0.):
+        self.ad.options.layer = layer_number
+        self.ad.plot_run()
+        time.sleep(wait_time)
+        cam.save_image()
+        
+    def init_cam(self, **kwargs):
+        try:
+            self.cam.close()
+        except AttributeError:
+            pass
+        
+        self.cam = pov.Camera(**kwargs)
+        return self.cam
+        
+    
+        
+    def plot_layers(self, prog_bar=True, wait_time=0., start_layer=0):
+        iterator = range(start_layer, self.n_layers+1)
+        if prog_bar:
+            iterator = tqdm(iterator)
+        
+        flag = GracefulExiter()
+        self.init_cam()
+        for layer_number in iterator:
+            self.plot_layer(cam=self.cam, layer_number=layer_number, wait_time=wait_time)
+            if flag.exit():
+                self.cam.close()
+                break
+            
+        self.cam.save_image()
+        
+        self.cam.close()
+        
+    def toggle_pen(self):
+        self.ad.options.mode = 'toggle'
+        self.ad.plot_run()
+        self.ad.options.mode = 'layers'
