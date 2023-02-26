@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "old-genpen"
+version = "0.1.0"
+description = ""
+authors = ["anaka <alex.naka@gmail.com>"]
+readme = "README.md"
+packages = [{include = "old_genpen"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+# install local libraries
+genpen = {path = "../../libraries/genpen"}
+fn = {path = "../../libraries/fn"}
+pov = {path = "../../libraries/pov"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
