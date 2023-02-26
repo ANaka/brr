@@ -15,6 +15,10 @@ vpype = {extras = ["all"], version = "^1.12.1"}
 vsketch = {git = "https://github.com/abey79/vsketch.git"}
 
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pytest-cov = "^4.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
