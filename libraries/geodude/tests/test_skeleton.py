@@ -1,5 +1,5 @@
-from geodude import __version__
+from geodude.utils import Paper
 
 
-def test_version():
-    assert __version__ == "0.1.0"
+def test_can_instantiate_Paper():
+    paper = Paper()
