@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "geodude"
+version = "0.1.0"
+description = ""
+authors = ["anaka <alex.naka@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "geodude" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+shapely = "^2.0.1"
+tqdm = "^4.64.1"
+seaborn = "^0.12.2"
+scikit-learn = "^1.2.1"
+vpype = {extras = ["all"], version = "^1.12.1"}
+vsketch = {git = "https://github.com/abey79/vsketch.git"}
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pytest-cov = "^4.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
