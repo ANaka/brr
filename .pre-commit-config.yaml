@@ -13,6 +13,12 @@ repos:
       - id: debug-statements
       - id: detect-private-key
 
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.0.254'
+    hooks:
+      - id: ruff
+
   # python code formatting
   - repo: https://github.com/psf/black
     rev: 22.8.0
@@ -27,6 +33,13 @@ repos:
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: '1.1.1'  # Use the sha / tag you want to point at
+    hooks:
+    -   id: mypy
+
+  
 
   # python docstring formatting
   #- repo: https://github.com/myint/docformatter
