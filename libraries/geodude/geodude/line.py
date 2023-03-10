@@ -1,5 +1,5 @@
 import numpy as np
-from shapely import LineString
+from shapely import LineString, MultiLineString
 
 
 def bezier_func(points):
@@ -41,3 +41,15 @@ def bezier_func(points):
             return LineString(pts)
 
     return evaluate_bezier
+
+
+def dash_linestring(linestring, interpolation_distances):
+    new_lines = []
+    ii = 0
+    while ii < len(interpolation_distances) - 1:
+        pt0 = linestring.interpolate(interpolation_distances[ii], normalized=True)
+        pt1 = linestring.interpolate(interpolation_distances[ii + 1], normalized=True)
+        new_line = LineString([pt0, pt1])
+        new_lines.append(new_line)
+        ii += 2
+    return MultiLineString(new_lines)
