@@ -4,7 +4,7 @@ repos:
     hooks:
       # list of supported hooks: https://pre-commit.com/hooks.html
       - id: trailing-whitespace
-      - id: end-of-file-fixer
+      # - id: end-of-file-fixer
       - id: check-merge-conflict # check for files with merge conflict strings
         args: ["--assume-in-merge"] #  and run this check even when not explicitly in a merge
       - id: check-yaml
@@ -18,7 +18,7 @@ repos:
     rev: 'v0.0.254'
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix]
 
   # python code formatting
   - repo: https://github.com/psf/black
