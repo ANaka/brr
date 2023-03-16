@@ -1,36 +1,32 @@
-from abc import ABC, abstractmethod
-from typing import overload, Iterator, Any
-
-class AbstractParameter(ABC):
+class Parameter:
     """
-    Abstract base class for a Parameter.
+    A generic parameter wrapper that can handle constant values, functions, or random variables.
+
+    Usage:
+    >>> x = Parameter(10)
+    >>> y = Parameter(lambda: random.uniform(0, 10))
+    >>> z = Parameter(np.random.normal, 0, 1)  # mean 0, std 1
     """
-    
-    
-    
-    def __iter__(self):
-        return self
-    
-    @abstractmethod
-    def __next__(self):
+
+    def __init__(self, value, *args, **kwargs):
         """
-        Yields the next value of the parameter.
+        Initialize the Parameter with a constant value, a function, or a random variable.
+
+        :param value: The constant value, function, or random variable.
+        :param args: Optional positional arguments for functions or random variables.
+        :param kwargs: Optional keyword arguments for functions or random variables.
         """
-        pass
-    
+        if callable(value):
+            self.value = lambda: value(*args, **kwargs)
+        else:
+            self.value = value
 
+    def __call__(self, *args, **kwargs):
+        """
+        Evaluate and return the parameter value.
 
-
-
-class Parameter(AbstractParameter):
-    
-    def __init__(self, f):
-        if not callable(f) and not isinstance(f, Iterator):
-            self._f = lambda: f
-        
-        # If f is a collection, wrap it in a function that iterates over the collection
-        if isinstance(f, Iterator):
-            def iter_fn():
-                for val in f:
-                    yield val
-            self._f = iter_fn
+        :return: The constant value or the result of the function or random variable.
+        """
+        if callable(self.value):
+            return self.value(*args, **kwargs)
+        return self.value
