@@ -62,3 +62,25 @@ class Paper(object):
             yborder = border
 
         return sg.box(xborder, yborder, self.x.mm - xborder, self.y.mm - yborder)
+
+
+def merge_LineStrings(mls_list):
+    merged_mls = []
+    for mls in mls_list:
+        if getattr(mls, "type") == "MultiLineString":
+            merged_mls += list(mls.geoms)
+        elif getattr(mls, "type") == "LineString":
+            merged_mls.append(mls)
+    return sg.MultiLineString(merged_mls)
+
+
+def merge_Polygons(mp_list):
+    merged_mps = []
+    for mp in mp_list:
+        if type(mp) == list:
+            merged_mps += list(mp)
+        elif getattr(mp, "type") == "MultiPolygon":
+            merged_mps += list(mp)
+        elif getattr(mp, "type") == "Polygon":
+            merged_mps.append(mp)
+    return sg.MultiPolygon(merged_mps)
