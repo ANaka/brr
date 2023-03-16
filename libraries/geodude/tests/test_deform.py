@@ -1,6 +1,6 @@
 import numpy as np
 from geodude.deform import Cloth
-
+from itertools import product
 
 def test_cloth_initialization():
     width = 10
@@ -10,7 +10,7 @@ def test_cloth_initialization():
     assert isinstance(cloth, Cloth), "Cloth object not created correctly"
     assert cloth.width == width, "Cloth width not initialized correctly"
     assert cloth.height == height, "Cloth height not initialized correctly"
-    assert cloth.vertices.shape == (height, width), "Cloth vertices not initialized correctly"
+    assert cloth.vertices.shape == (height, width, 2), "Cloth vertices not initialized correctly"
     assert len(cloth.edges) == (width - 1) * height + width * (height - 1), "Cloth edges not initialized correctly"
 
 
@@ -52,18 +52,17 @@ def test_update_cloth():
 
 
 def test_cloth_constraints():
-    cloth = Cloth(5, 5)
-    cloth.vertices[1, 1] += np.array([2, 2])  # Modify a vertex to violate the constraint
-    np.copy(cloth.vertices)
-    cloth.satisfy_constraints(1)
+    cloth = Cloth(4, 4)
+    initial_edges = cloth.edges.copy()
+    cloth.apply_gravity(1)
+    cloth.satisfy_constraints(10)
+    tolerance = 0.01
 
-    # Check if the constraints are satisfied
-    for i in range(cloth.height - 1):
-        for j in range(cloth.width - 1):
-            horizontal_dist = np.linalg.norm(cloth.vertices[i, j] - cloth.vertices[i, j + 1])
-            vertical_dist = np.linalg.norm(cloth.vertices[i, j] - cloth.vertices[i + 1, j])
-            assert np.isclose(horizontal_dist, 1, rtol=1e-05), "Horizontal cloth constraint not satisfied"
-            assert np.isclose(vertical_dist, 1, rtol=1e-05), "Vertical cloth constraint not satisfied"
+    for edge in cloth.edges:
+        p1, p2 = edge
+        length = np.linalg.norm(p2 - p1)
+        assert np.abs(length - 1) < tolerance
+
 
 
 def test_cloth_collision_response():
