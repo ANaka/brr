@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 shapely = "^2.0.1"
 tqdm = "^4.64.1"
 seaborn = "^0.12.2"
