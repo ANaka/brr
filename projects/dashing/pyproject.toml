@@ -7,11 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
-geodude = {path = "../../libraries/geodude"}
+geodude = {path = "../../libraries/geodude", develop = true}
+fn = {path = "../../libraries/fn", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.21.3"
+debugpy = "1.6.2"
+ipykernel = "^6.20"
 
 [build-system]
 requires = ["poetry-core"]
