@@ -16,7 +16,7 @@ class Namer(Fn):
         session = boto3.Session()
     s3 = session.client("s3")
 
-    def save_plot_id(self, Bucket="algorithmic-ink", Key="current_plot_id"):
+    def save_output_id(self, Bucket="algorithmic-ink-versioned", Key="current_output_id"):
         tmp = tempfile.NamedTemporaryFile(delete=False)
         plot_id = self.name
         print(f"saved {plot_id} to s3://{Bucket}/{Key}")
@@ -25,19 +25,7 @@ class Namer(Fn):
         self.s3.upload_file(Filename=tmp.name, Bucket=Bucket, Key=Key)
         return plot_id
 
-    def get_current_plot_id(self, Bucket="algorithmic-ink", Key="current_plot_id"):
-        return self.s3.get_object(Bucket=Bucket, Key=Key)["Body"].read().decode()
-
-    def save_nft_id(self, Bucket="algorithmic-ink", Key="current_nft_id"):
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        plot_id = self.name
-        print(f"saved {plot_id} to s3://{Bucket}/{Key}")
-        tmp.write(plot_id.encode())
-        tmp.close()
-        self.s3.upload_file(Filename=tmp.name, Bucket=Bucket, Key=Key)
-        return plot_id
-
-    def get_current_nft_id(self, Bucket="algorithmic-ink", Key="current_nft_id"):
+    def get_current_plot_id(self, Bucket="algorithmic-ink-versioned", Key="current_output_id"):
         return self.s3.get_object(Bucket=Bucket, Key=Key)["Body"].read().decode()
 
 
