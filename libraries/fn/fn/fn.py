@@ -138,3 +138,8 @@ class Fn:
         outputs_root = Path(outputs_root) if outputs_root is not None else OUTPUTS_ROOT
         _ = self.save_output_id(self.name, Bucket=Bucket, Key=Key, boto3_session_kwargs=boto3_session_kwargs)
         return outputs_root / f"{self.name}{ext}"
+
+
+def new_savepath(postfix: str = "", ext: str = ".svg"):
+    """convenience function, use Fn().new_savepath() for more control"""
+    return Fn(postfix=postfix).new_savepath(ext=ext)
