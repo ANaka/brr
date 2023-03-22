@@ -2,7 +2,7 @@ import os
 import tempfile
 
 import boto3
-from fn import Fn
+from fn.fn import Fn
 
 
 def get_plot_id():
