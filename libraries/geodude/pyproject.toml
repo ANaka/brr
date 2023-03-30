@@ -18,6 +18,8 @@ vpype = {extras = ["all"], version = "^1.12.1"}
 vsketch = {git = "https://github.com/abey79/vsketch.git"}
 hypothesis = "^6.70.0"
 fn = {path = "../fn", develop = true}
+fiona = "1.9"
+geopandas = "^0.12.2"
 
 
 [tool.poetry.group.dev.dependencies]
