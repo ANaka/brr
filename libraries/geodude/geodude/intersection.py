@@ -2,7 +2,9 @@ import itertools
 from typing import List, Union
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+from shapely.errors import TopologicalError
 from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 
@@ -21,9 +23,25 @@ def polys_to_gdf(polygons: Union[List, MultiPolygon]):
 def find_intersecting_polys(geoms: list):
     intersection_map = {ii: set() for ii in range(len(geoms))}
     for ii, jj in itertools.combinations(range(len(geoms)), 2):
-        if (geoms[ii].intersects(geoms[jj])) and not (geoms[ii].touches(geoms[jj])):
+        if geoms[ii].buffer(-1e-6).intersects(geoms[jj].buffer(-1e-6)):
             intersection_map[ii].add(jj)
             intersection_map[jj].add(ii)
+    return intersection_map
+
+
+def find_touching_polys(geoms: list):
+    intersection_map = {ii: set() for ii in range(len(geoms))}
+    for ii, jj in itertools.combinations(range(len(geoms)), 2):
+        try:
+            if geoms[ii].touches(geoms[jj]):
+                intersection_map[ii].add(jj)
+                intersection_map[jj].add(ii)
+        except TopologicalError:
+            if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
+                geoms[jj].buffer(-1e-6)
+            ):
+                intersection_map[ii].add(jj)
+                intersection_map[jj].add(ii)
     return intersection_map
 
 
@@ -96,6 +114,4 @@ def pairwise_partition_polygons(gdf: gpd.GeoDataFrame):
     disjoint_gdfs.append(gdf)
 
     gdf = gpd.GeoDataFrame(pd.concat(disjoint_gdfs)).reset_index(drop=True)
-    gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
-    gdf["n_intersections"] = gdf.intersectors.apply(len)
-    return gdf
+    return gdf[["geometry"]]
