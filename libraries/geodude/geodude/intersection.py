@@ -45,6 +45,15 @@ def find_touching_polys(geoms: list):
     return intersection_map
 
 
+def find_contained_polys(geoms: list):
+    contains_map = {ii: set() for ii in range(len(geoms))}
+    for ii, jj in itertools.product(range(len(geoms)), range(len(geoms))):
+        if ii != jj:
+            if geoms[ii].buffer(1e-6).contains(geoms[jj].buffer(1e-7)):
+                contains_map[ii].add(jj)
+    return contains_map
+
+
 def one_vs_all_differences(geoms: list, intersection_map: dict):
     differences = []
     for ii, poly in enumerate(geoms):
@@ -53,10 +62,15 @@ def one_vs_all_differences(geoms: list, intersection_map: dict):
     return differences
 
 
-def pairwise_partition_polygons(gdf: gpd.GeoDataFrame, verbose: bool = True):
+def pairwise_partition_polygons(
+    gdf: gpd.GeoDataFrame,
+    verbose: bool = False,
+    min_area: float = None,
+):
     total_n_intersections = 1
 
     disjoint_gdfs = []
+    n_intersections_log = []
     while total_n_intersections > 0:
         gdf = gdf.reset_index(drop=True)
         gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
@@ -74,7 +88,7 @@ def pairwise_partition_polygons(gdf: gpd.GeoDataFrame, verbose: bool = True):
         split_gdfs = [gpd.GeoDataFrame({"geometry": []})]
         init_gdf_len = len(gdf)
         while len(gdf.query("n_intersections > 0")) > 1:
-
+            n_intersections_log.append(total_n_intersections)
             # get one row
 
             seed_idx = np.random.choice(gdf.query("n_intersections > 0").index)
@@ -103,20 +117,21 @@ def pairwise_partition_polygons(gdf: gpd.GeoDataFrame, verbose: bool = True):
             gdf = gdf.loc[~gdf.index.isin([seed_idx, intersector_idx])]
             total_n_intersections = gdf.n_intersections.sum()
             if verbose:
-                print(f"Total n intersections: {total_n_intersections}")
-
+                print(total_n_intersections)
             if len(gdf) == init_gdf_len:
                 break
 
         gdf = gpd.GeoDataFrame(pd.concat(split_gdfs + [gdf]))
         gdf = gdf[gdf.geom_type == "Polygon"]
         gdf = gdf[~gdf.is_empty]
+        if min_area is not None:
+            gdf = gdf[gdf.area > min_area]
         gdf = gdf.reset_index(drop=True)
 
     disjoint_gdfs.append(gdf)
 
     gdf = gpd.GeoDataFrame(pd.concat(disjoint_gdfs)).reset_index(drop=True)
-    return gdf[["geometry"]]
+    return gdf[["geometry"]], n_intersections_log
 
 
 def find_clusters(adjacency_list):
