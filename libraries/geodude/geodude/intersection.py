@@ -4,7 +4,7 @@ from typing import List, Union
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from shapely.errors import TopologicalError
+from shapely.errors import GEOSException
 from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 
@@ -36,7 +36,7 @@ def find_touching_polys(geoms: list):
             if geoms[ii].touches(geoms[jj]):
                 intersection_map[ii].add(jj)
                 intersection_map[jj].add(ii)
-        except TopologicalError:
+        except GEOSException:
             if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
                 geoms[jj].buffer(-1e-6)
             ):
@@ -115,3 +115,23 @@ def pairwise_partition_polygons(gdf: gpd.GeoDataFrame):
 
     gdf = gpd.GeoDataFrame(pd.concat(disjoint_gdfs)).reset_index(drop=True)
     return gdf[["geometry"]]
+
+
+def find_clusters(adjacency_list):
+    visited = set()
+    clusters = []
+
+    def dfs(node, cluster):
+        visited.add(node)
+        cluster.append(node)
+        for adj_node in adjacency_list[node]:
+            if adj_node not in visited:
+                dfs(adj_node, cluster)
+
+    for node in adjacency_list:
+        if node not in visited:
+            cluster = []
+            dfs(node, cluster)
+            clusters.append(cluster)
+
+    return clusters
