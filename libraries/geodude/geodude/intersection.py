@@ -53,7 +53,7 @@ def one_vs_all_differences(geoms: list, intersection_map: dict):
     return differences
 
 
-def pairwise_partition_polygons(gdf: gpd.GeoDataFrame):
+def pairwise_partition_polygons(gdf: gpd.GeoDataFrame, verbose: bool = True):
     total_n_intersections = 1
 
     disjoint_gdfs = []
@@ -102,6 +102,8 @@ def pairwise_partition_polygons(gdf: gpd.GeoDataFrame):
             # remove used polys from gdf
             gdf = gdf.loc[~gdf.index.isin([seed_idx, intersector_idx])]
             total_n_intersections = gdf.n_intersections.sum()
+            if verbose:
+                print(f"Total n intersections: {total_n_intersections}")
 
             if len(gdf) == init_gdf_len:
                 break
