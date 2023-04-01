@@ -8,6 +8,7 @@ import pandas as pd
 from shapely.errors import GEOSException
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
+from tqdm import tqdm
 
 
 def polys_to_gdf(polygons: Union[List, MultiPolygon]):
@@ -30,6 +31,16 @@ def find_intersecting_polys(geoms: List[Polygon]) -> Dict[int, set]:
     return intersection_map
 
 
+def find_intersectiong_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
+    intersection_map = {ii: set() for ii in range(len(geoms))}
+    gs = gpd.GeoSeries(geoms).buffer(-1e-6)
+    for ii in range(len(geoms)):
+        _gs = gs.copy()
+        current = _gs.pop(ii)
+        intersection_map[ii] = set(_gs.loc[_gs.intersects(current)].index)
+    return intersection_map
+
+
 def find_touching_polys(geoms: List[Polygon]) -> Dict[int, set]:
     intersection_map = {ii: set() for ii in range(len(geoms))}
     for ii, jj in itertools.combinations(range(len(geoms)), 2):
@@ -43,6 +54,22 @@ def find_touching_polys(geoms: List[Polygon]) -> Dict[int, set]:
             ):
                 intersection_map[ii].add(jj)
                 intersection_map[jj].add(ii)
+    return intersection_map
+
+
+def find_touching_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
+    intersection_map = {ii: set() for ii in range(len(geoms))}
+    gs_dilated = gpd.GeoSeries(geoms).buffer(1e-6)
+    gs_eroded = gpd.GeoSeries(geoms).buffer(-1e-6)
+    for ii in range(len(geoms)):
+        _gs_dilated = gs_dilated.copy()
+        _gs_eroded = gs_eroded.copy()
+        current_dilated = _gs_dilated.pop(ii)
+        current_eroded = _gs_eroded.pop(ii)
+        intersects_dilated = _gs_dilated.intersects(current_dilated)
+        intersects_eroded = _gs_eroded.intersects(current_eroded)
+        touches_idx = intersects_dilated & ~intersects_eroded
+        intersection_map[ii] = set(_gs_dilated.loc[touches_idx].index)
     return intersection_map
 
 
@@ -74,7 +101,7 @@ def pairwise_partition_polygons(
     n_intersections_log = []
     while total_n_intersections > 0:
         gdf = gdf.reset_index(drop=True)
-        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
+        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
 
         # remove disjoint polys
@@ -141,7 +168,7 @@ def find_parent_polygons(
     buffer_distance: float = -0.001,
     min_norm_area: float = 0.95,  # theoretically this should be 1.0
 ) -> gpd.GeoDataFrame:
-    disjoint["adjacent_polys"] = find_touching_polys(disjoint.geometry)
+    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
     disjoint.loc[:, "intersecting_original_polygons"] = [set() for _ in range(len(disjoint))]
     disjoint["order"] = [tuple() for _ in range(len(disjoint))]
     slightly_buffered_gdf = original.buffer(buffer_distance)
@@ -255,7 +282,7 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
         gdf = gdf.reset_index(drop=True)
         print(f"Iteration {iteration_num}")
         print(f"Finding intersections in {len(gdf)} polygons")
-        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
+        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
         # remove disjoint polys
         is_disjoint = gdf.n_intersections == 0
@@ -306,11 +333,12 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
         if len(chunks) == 0:
             break
 
-        for ii, chunk in enumerate(chunks):
-            current_chunk_intersections = chunk.n_intersections.sum()
-            print(
-                f"Partitioning chunk {ii+1}/{len(chunks)} ({len(chunk)} polygons, {current_chunk_intersections} intersections)"
-            )
+        print(f"Partitioning {len(chunks)} chunks")
+        for ii, chunk in tqdm(enumerate(chunks)):
+            # current_chunk_intersections = chunk.n_intersections.sum()
+            # print(
+            #     f"Partitioning chunk {ii+1}/{len(chunks)} ({len(chunk)} polygons, {current_chunk_intersections} intersections)"
+            # )
             chunk, _ = pairwise_partition_polygons(chunk, **kwargs)
             chunks[ii] = chunk
 
