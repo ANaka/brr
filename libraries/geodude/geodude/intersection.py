@@ -168,8 +168,9 @@ def find_parent_polygons(
     buffer_distance: float = -1e-6,
     min_norm_area: float = 0.5,  # theoretically this should be 1.0
 ) -> gpd.GeoDataFrame:
-    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
+
     disjoint.loc[:, "intersecting_original_polygons"] = [set() for _ in range(len(disjoint))]
+    disjoint.loc[:, "areas"] = [dict() for _ in range(len(disjoint))]
     disjoint["order"] = [tuple() for _ in range(len(disjoint))]
     slightly_buffered_gdf = original.buffer(buffer_distance)
 
@@ -181,12 +182,15 @@ def find_parent_polygons(
         candidate_parents = set(slightly_buffered_gdf[slightly_buffered_gdf.intersects(poly)].index)
         parents = set()
 
+        areas = {}
         for jj in candidate_parents:
             area = poly.intersection(original.loc[jj].geometry).area / poly.area
+            areas[jj] = area
             if area > min_norm_area:
                 parents.add(jj)
 
         disjoint.loc[ii, "intersecting_original_polygons"].update(parents)
+        disjoint.loc[ii, "areas"].update(areas)
 
     disjoint["n_parents"] = disjoint.intersecting_original_polygons.apply(len)
     idx = disjoint["n_parents"] == 1
@@ -197,6 +201,7 @@ def find_parent_polygons(
 
 
 def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
+    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
@@ -220,6 +225,7 @@ def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
 
 
 def assign_random_order_to_adjacent_clusters(disjoint):
+    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
@@ -248,15 +254,19 @@ def assign_random_order_to_adjacent_clusters(disjoint):
 
 def merge_disjoint_polys(disjoint: gpd.GeoDataFrame):
     new_polys = []
+    parents = []
     for parent, sub_gdf in disjoint.groupby("parent"):
         merged = unary_union(sub_gdf.geometry)
 
         if isinstance(merged, Polygon):
             new_polys.append(merged)
+            n_additions = 1
         else:
-
             new_polys.extend(merged.geoms)
-    return gpd.GeoDataFrame(geometry=new_polys)
+            n_additions = len(merged.geoms)
+
+        parents.extend([parent] * n_additions)
+    return gpd.GeoDataFrame(dict(geometry=new_polys, parent=parents))
 
 
 def find_clusters(adjacency_list: Dict[int, set]) -> List[List[int]]:
