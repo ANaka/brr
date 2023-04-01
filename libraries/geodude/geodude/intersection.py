@@ -165,8 +165,8 @@ def pairwise_partition_polygons(
 def find_parent_polygons(
     disjoint: gpd.GeoDataFrame,
     original: gpd.GeoDataFrame,
-    buffer_distance: float = -0.001,
-    min_norm_area: float = 0.95,  # theoretically this should be 1.0
+    buffer_distance: float = -1e-6,
+    min_norm_area: float = 0.5,  # theoretically this should be 1.0
 ) -> gpd.GeoDataFrame:
     disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
     disjoint.loc[:, "intersecting_original_polygons"] = [set() for _ in range(len(disjoint))]
@@ -236,7 +236,13 @@ def assign_random_order_to_adjacent_clusters(disjoint):
                 parent for parent in local_order if parent in disjoint.loc[ii, "intersecting_original_polygons"]
             )
 
-    disjoint["parent"] = disjoint["order"].apply(lambda x: x[0])
+    def get_first(x):
+        try:
+            return x[0]
+        except IndexError:
+            return -1
+
+    disjoint["parent"] = disjoint["order"].apply(get_first)
     return disjoint
 
 
