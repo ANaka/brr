@@ -20,6 +20,8 @@ hypothesis = "^6.70.0"
 fn = {path = "../fn", develop = true}
 fiona = "1.9"
 geopandas = "^0.12.2"
+hydra-zen = "^0.10.0"
+makefun = "^1.15.1"
 
 
 [tool.poetry.group.dev.dependencies]
