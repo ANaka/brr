@@ -67,9 +67,9 @@ class Paper(object):
 def merge_LineStrings(mls_list):
     merged_mls = []
     for mls in mls_list:
-        if getattr(mls, "type") == "MultiLineString":
+        if mls.geom_type == "MultiLineString":
             merged_mls += list(mls.geoms)
-        elif getattr(mls, "type") == "LineString":
+        elif mls.geom_type == "LineString":
             merged_mls.append(mls)
     return sg.MultiLineString(merged_mls)
 
