@@ -3,6 +3,8 @@ import copy
 from collections import UserDict
 from functools import partial
 
+from makefun import wraps
+
 
 class Parameter:
     """
@@ -75,6 +77,7 @@ def prms(**kwargs):
 def unpack_prms(f):
     """Wrapper function that checks if args and kwargs to a function are Parameters; if so, unpacks them."""
 
+    @wraps(f)
     def wrapper(*args, **kwargs):
         args = [a() if isinstance(a, Parameter) else a for a in args]
         kwargs = {k: v() if isinstance(v, Parameter) else v for k, v in kwargs.items()}
