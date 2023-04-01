@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 
 import numpy as np
+from makefun import wraps
+from shapely import Geometry
 from shapely import affinity as sa
 from shapely.geometry import box
 
@@ -97,12 +99,44 @@ def ensure_collection(x, length):
         return scalar_to_collection(x, length)
 
 
-def buffer_translate(p, d_buffer, d_translate, angle, cap_style=2, join_style=2, **kwargs):
-    xoff = np.cos(angle) * d_translate
-    yoff = np.sin(angle) * d_translate
-    bp = p.buffer(d_buffer, cap_style=cap_style, join_style=join_style, **kwargs)
-    btp = sa.translate(bp, xoff=xoff, yoff=yoff)
-    return btp
+def angle_translate(geom: Geometry, d_translate: float, deg: float = None, rad: float = None, **kwargs) -> Geometry:
+    assert (deg is None) ^ (rad is None), "must specify either deg or rad"
+    if deg is not None:
+        rad = np.deg2rad(deg)
+    xoff = np.cos(rad) * d_translate
+    yoff = np.sin(rad) * d_translate
+    return sa.translate(geom, xoff=xoff, yoff=yoff, **kwargs)
+
+
+def buffer_translate(
+    geom: Geometry,
+    d_buffer: float,
+    d_translate: float,
+    deg: float = None,
+    rad: float = None,
+    resolution=16,
+    quad_segs=8,
+    cap_style="round",
+    join_style="round",
+    mitre_limit=5.0,
+    single_sided=False,
+    **kwargs
+):
+    bp = geom.buffer(
+        distance=d_buffer,
+        cap_style=cap_style,
+        join_style=join_style,
+        resolution=resolution,
+        quad_segs=quad_segs,
+        mitre_limit=mitre_limit,
+        single_sided=single_sided,
+    )
+    return angle_translate(bp, d_translate, deg=deg, rad=rad, **kwargs)
+
+
+@wraps(buffer_translate)
+def buft(*args, **kwargs):
+    return buffer_translate(*args, **kwargs)
 
 
 def multi_buffer_translate(
