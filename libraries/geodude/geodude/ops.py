@@ -1,3 +1,6 @@
+from dataclasses import dataclass, field
+
+import numpy as np
 from shapely import affinity as sa
 from shapely.geometry import box
 
@@ -79,3 +82,80 @@ def make_like(p, target, return_transform=False):
         return transformed_poly, transform
     else:
         return transformed_poly
+
+
+def scalar_to_collection(scalar, length):
+    stype = type(scalar)
+    return (np.ones(length) * scalar).astype(stype)
+
+
+def ensure_collection(x, length):
+    if np.iterable(x):
+        assert len(x) == length
+        return x
+    else:
+        return scalar_to_collection(x, length)
+
+
+def buffer_translate(p, d_buffer, d_translate, angle, cap_style=2, join_style=2, **kwargs):
+    xoff = np.cos(angle) * d_translate
+    yoff = np.sin(angle) * d_translate
+    bp = p.buffer(d_buffer, cap_style=cap_style, join_style=join_style, **kwargs)
+    btp = sa.translate(bp, xoff=xoff, yoff=yoff)
+    return btp
+
+
+def multi_buffer_translate(
+    p, d_buffers, d_translates, angles, cap_style=2, join_style=2, return_original=True, **kwargs
+):
+
+    d_translates = ensure_collection(d_translates, length=len(d_buffers))
+    angles = ensure_collection(angles, length=len(d_buffers))
+
+    ssps = []
+    if return_original:
+        ssps.append(p)
+
+    ssp = p
+    for d_buffer, d_translate, angle in zip(d_buffers, d_translates, angles):
+        ssp = buffer_translate(ssp, d_buffer, d_translate, angle, cap_style, join_style, **kwargs)
+        if ssp.area < np.finfo(float).eps:
+            break
+        ssps.append(ssp)
+    return ssps
+
+
+@dataclass
+class MultiBufferTranslatePrms:
+    """
+    pt = Point(0,0)
+    poly = Poly(pt.buffer(10))
+    prms = ScaleTransPrms(
+        n_iters=200,
+        d_buffer=-0.25,
+        d_translate_factor=0.7,
+        angles=0,
+    )
+    poly.fill_scale_trans(**prms.prms)
+    """
+
+    n_iters: int = 100
+    d_buffer: float = -0.25
+    d_translate_factor: float = 0.9
+    d_translate: float = None
+    angles: float = 0.0  # radians
+    d_translates: list = field(default=None, init=False)
+
+    def __post_init__(self):
+        self.d_buffers = np.array([self.d_buffer] * self.n_iters)
+
+        if self.d_translates is None:
+            if self.d_translate is not None:
+                self.d_translates = np.array([self.d_translate] * self.n_iters)
+            else:
+                self.d_translates = self.d_buffers * self.d_translate_factor
+
+    @property
+    def prms(self):
+        varnames = ["d_buffers", "d_translates", "angles"]
+        return {var: getattr(self, var) for var in varnames}
