@@ -25,6 +25,16 @@ def find_intersecting_polys(geoms: List[Polygon], vectorized: bool = True) -> Di
     -------
     Dict[int, set]
         A map of polygon indices to the indices of intersecting polygons
+
+     Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(1, 0), (1, 1), (2, 1), (2, 0)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_touching_polys(geoms)
+    {0: {1}, 1: {0}, 2: set()}
     """
     intersection_map = {ii: set() for ii in range(len(geoms))}
     if vectorized:
@@ -56,6 +66,16 @@ def find_touching_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[i
     -------
     Dict[int, set]
         A map of polygon indices to the indices of touching polygons
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(1, 0), (1, 1), (2, 1), (2, 0)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_touching_polys(geoms)
+    {0: {1}, 1: {0}, 2: set()}
     """
     intersection_map = {ii: set() for ii in range(len(geoms))}
     if vectorized:
@@ -100,6 +120,16 @@ def find_contained_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[
     -------
     Dict[int, set]
         A map of polygon indices to the indices of contained polygons
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 2), (2, 2), (2, 0)])
+    >>> poly2 = Polygon([(0.5, 0.5), (0.5, 1.5), (1.5, 1.5), (1.5, 0.5)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_contained_polys(geoms)
+    {0: {1}, 1: set(), 2: set()}
     """
     contains_map = {ii: set() for ii in range(len(geoms))}
     if vectorized:
@@ -145,6 +175,16 @@ def pairwise_partition_polygons(
     -------
     Tuple[gpd.GeoDataFrame, List[int]]
         [description]
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(0.5, 0.5), (0.5, 1.5), (1.5, 1.5), (1.5, 0.5)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> intersection_map = find_intersecting_polys(geoms)
+    >>> one_vs_all_differences(geoms, intersection_map)
     """
     total_n_intersections = 1
 
