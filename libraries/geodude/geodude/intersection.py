@@ -22,55 +22,51 @@ def polys_to_gdf(polygons: Union[List, MultiPolygon]):
     return gpd.GeoDataFrame({"geometry": polygons})
 
 
-def find_intersecting_polys(geoms: List[Polygon]) -> Dict[int, set]:
+def find_intersecting_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
     intersection_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.combinations(range(len(geoms)), 2):
-        if geoms[ii].buffer(-1e-6).intersects(geoms[jj].buffer(-1e-6)):
-            intersection_map[ii].add(jj)
-            intersection_map[jj].add(ii)
-    return intersection_map
-
-
-def find_intersectiong_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
-    intersection_map = {ii: set() for ii in range(len(geoms))}
-    gs = gpd.GeoSeries(geoms).buffer(-1e-6)
-    for ii in range(len(geoms)):
-        _gs = gs.copy()
-        current = _gs.pop(ii)
-        intersection_map[ii] = set(_gs.loc[_gs.intersects(current)].index)
-    return intersection_map
-
-
-def find_touching_polys(geoms: List[Polygon]) -> Dict[int, set]:
-    intersection_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.combinations(range(len(geoms)), 2):
-        try:
-            if geoms[ii].touches(geoms[jj]):
+    if vectorized:
+        gs = gpd.GeoSeries(geoms).buffer(-1e-6)
+        for ii in range(len(geoms)):
+            _gs = gs.copy()
+            current = _gs.pop(ii)
+            intersection_map[ii] = set(_gs.loc[_gs.intersects(current)].index)
+        return intersection_map
+    else:
+        for ii, jj in itertools.combinations(range(len(geoms)), 2):
+            if geoms[ii].buffer(-1e-6).intersects(geoms[jj].buffer(-1e-6)):
                 intersection_map[ii].add(jj)
                 intersection_map[jj].add(ii)
-        except GEOSException:
-            if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
-                geoms[jj].buffer(-1e-6)
-            ):
-                intersection_map[ii].add(jj)
-                intersection_map[jj].add(ii)
-    return intersection_map
+        return intersection_map
 
 
-def find_touching_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
+def find_touching_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
     intersection_map = {ii: set() for ii in range(len(geoms))}
-    gs_dilated = gpd.GeoSeries(geoms).buffer(1e-6)
-    gs_eroded = gpd.GeoSeries(geoms).buffer(-1e-6)
-    for ii in range(len(geoms)):
-        _gs_dilated = gs_dilated.copy()
-        _gs_eroded = gs_eroded.copy()
-        current_dilated = _gs_dilated.pop(ii)
-        current_eroded = _gs_eroded.pop(ii)
-        intersects_dilated = _gs_dilated.intersects(current_dilated)
-        intersects_eroded = _gs_eroded.intersects(current_eroded)
-        touches_idx = intersects_dilated & ~intersects_eroded
-        intersection_map[ii] = set(_gs_dilated.loc[touches_idx].index)
-    return intersection_map
+    if vectorized:
+        gs_dilated = gpd.GeoSeries(geoms).buffer(1e-6)
+        gs_eroded = gpd.GeoSeries(geoms).buffer(-1e-6)
+        for ii in range(len(geoms)):
+            _gs_dilated = gs_dilated.copy()
+            _gs_eroded = gs_eroded.copy()
+            current_dilated = _gs_dilated.pop(ii)
+            current_eroded = _gs_eroded.pop(ii)
+            intersects_dilated = _gs_dilated.intersects(current_dilated)
+            intersects_eroded = _gs_eroded.intersects(current_eroded)
+            touches_idx = intersects_dilated & ~intersects_eroded
+            intersection_map[ii] = set(_gs_dilated.loc[touches_idx].index)
+        return intersection_map
+    else:
+        for ii, jj in itertools.combinations(range(len(geoms)), 2):
+            try:
+                if geoms[ii].touches(geoms[jj]):
+                    intersection_map[ii].add(jj)
+                    intersection_map[jj].add(ii)
+            except GEOSException:
+                if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
+                    geoms[jj].buffer(-1e-6)
+                ):
+                    intersection_map[ii].add(jj)
+                    intersection_map[jj].add(ii)
+        return intersection_map
 
 
 def find_contained_polys(geoms: List[Polygon]) -> Dict[int, set]:
@@ -101,7 +97,7 @@ def pairwise_partition_polygons(
     n_intersections_log = []
     while total_n_intersections > 0:
         gdf = gdf.reset_index(drop=True)
-        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
+        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
 
         # remove disjoint polys
@@ -201,7 +197,7 @@ def find_parent_polygons(
 
 
 def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
-    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
+    disjoint["adjacent_polys"] = find_touching_polys(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
@@ -225,7 +221,7 @@ def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
 
 
 def assign_random_order_to_adjacent_clusters(disjoint):
-    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
+    disjoint["adjacent_polys"] = find_touching_polys(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
@@ -313,7 +309,7 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
         gdf = gdf.reset_index(drop=True)
         print(f"Iteration {iteration_num}")
         print(f"Finding intersections in {len(gdf)} polygons")
-        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
+        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
         # remove disjoint polys
         is_disjoint = gdf.n_intersections == 0
