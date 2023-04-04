@@ -104,7 +104,7 @@ def merge_Polygons(mp_list):
     return sg.MultiPolygon(merged_mps)
 
 
-def flatten_geom_collection(
+def flatten_geoms(
     geoms: Union[gpd.GeoDataFrame, gpd.GeoSeries, List[Geometry]],
     as_gdf: bool = True,
 ) -> Union[gpd.GeoDataFrame, List[Geometry]]:
