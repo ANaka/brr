@@ -269,22 +269,37 @@ def merge_disjoint_polys(disjoint: gpd.GeoDataFrame):
     return gpd.GeoDataFrame(dict(geometry=new_polys, parent=parents))
 
 
-def find_clusters(adjacency_list: Dict[int, set]) -> List[List[int]]:
+def find_clusters(adjacency_list: Dict[int, set], use_bfs: bool = True) -> List[List[int]]:
     visited = set()
     clusters = []
 
-    def dfs(node, cluster):
-        visited.add(node)
-        cluster.append(node)
-        for adj_node in adjacency_list[node]:
-            if adj_node not in visited:
-                dfs(adj_node, cluster)
+    if use_bfs:
+        for node in adjacency_list:
+            if node not in visited:
+                cluster = []
+                queue = deque([node])
+                while queue:
+                    current_node = queue.popleft()
+                    if current_node not in visited:
+                        visited.add(current_node)
+                        cluster.append(current_node)
+                        for neighbor in adjacency_list[current_node]:
+                            queue.append(neighbor)
+                clusters.append(cluster)
+    else:
 
-    for node in adjacency_list:
-        if node not in visited:
-            cluster = []
-            dfs(node, cluster)
-            clusters.append(cluster)
+        def dfs(node, cluster):
+            visited.add(node)
+            cluster.append(node)
+            for adj_node in adjacency_list[node]:
+                if adj_node not in visited:
+                    dfs(adj_node, cluster)
+
+        for node in adjacency_list:
+            if node not in visited:
+                cluster = []
+                dfs(node, cluster)
+                clusters.append(cluster)
 
     return clusters
 
