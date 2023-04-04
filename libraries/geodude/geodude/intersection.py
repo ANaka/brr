@@ -69,13 +69,21 @@ def find_touching_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[i
         return intersection_map
 
 
-def find_contained_polys(geoms: List[Polygon]) -> Dict[int, set]:
+def find_contained_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
     contains_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.product(range(len(geoms)), range(len(geoms))):
-        if ii != jj:
-            if geoms[ii].buffer(1e-6).contains(geoms[jj].buffer(1e-7)):
-                contains_map[ii].add(jj)
-    return contains_map
+    if vectorized:
+        gs = gpd.GeoSeries(geoms).buffer(1e-6)
+        for ii in range(len(geoms)):
+            _gs = gs.copy()
+            current = _gs.pop(ii)
+            contains_map[ii] = set(_gs.loc[_gs.contains(current)].index)
+        return contains_map
+    else:
+        for ii, jj in itertools.product(range(len(geoms)), range(len(geoms))):
+            if ii != jj:
+                if geoms[ii].buffer(1e-6).contains(geoms[jj].buffer(1e-7)):
+                    contains_map[ii].add(jj)
+        return contains_map
 
 
 def one_vs_all_differences(geoms: List[Polygon], intersection_map: Dict[int, set]) -> List[Polygon]:
