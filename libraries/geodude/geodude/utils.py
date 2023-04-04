@@ -67,6 +67,12 @@ class Paper(object):
 
 
 def merge_LineStrings(mls_list):
+    if isinstance(mls_list, Geometry):
+        mls_list = mls_list.geoms
+    elif isinstance(mls_list, gpd.GeoDataFrame):
+        mls_list = mls_list.geometry
+    elif isinstance(mls_list, gpd.GeoSeries):
+        mls_list = mls_list.to_list()
     merged_mls = []
     for mls in mls_list:
         if mls.geom_type == "MultiLineString":
