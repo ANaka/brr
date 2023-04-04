@@ -1,25 +1,14 @@
 import itertools
 from collections import deque
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely.errors import GEOSException
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from tqdm import tqdm
-
-
-def polys_to_gdf(polygons: Union[List, MultiPolygon]):
-    try:
-        if polygons.geom_type == "MultiPolygon":
-            polygons = polygons.geoms
-    except AttributeError:
-        pass
-
-    # Create a GeoDataFrame from the input polygons with an additional column to store the index
-    return gpd.GeoDataFrame({"geometry": polygons})
 
 
 def find_intersecting_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
