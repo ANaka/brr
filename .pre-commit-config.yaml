@@ -64,11 +64,11 @@ repos:
 
   #jupyter notebook code formatting
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.6.1
+    rev: 1.7.0
     hooks:
-      # - id: nbqa-black
-      #   additional_dependencies: [black]  # optional, only if you're using Jupytext
-      # - id: nbqa-pyupgrade
-      #   args: ["--py38-plus"]
+      - id: nbqa-black
+        additional_dependencies: [black]  # optional, only if you're using Jupytext
+      - id: nbqa-pyupgrade
+        args: ["--py38-plus"]
       - id: nbqa-isort
         args: ["--float-to-top"]
