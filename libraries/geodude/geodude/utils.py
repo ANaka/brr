@@ -1,4 +1,6 @@
+import geopandas as gpd
 import shapely.geometry as sg
+from shapely import Geometry
 
 
 class Distance(object):
@@ -75,12 +77,20 @@ def merge_LineStrings(mls_list):
 
 
 def merge_Polygons(mp_list):
+    if isinstance(mp_list, Geometry):
+        mp_list = mp_list.geoms
+    elif isinstance(mp_list, gpd.GeoDataFrame):
+        mp_list = mp_list.geometry
+    elif isinstance(mp_list, gpd.GeoSeries):
+        mp_list = mp_list.to_list()
+
     merged_mps = []
     for mp in mp_list:
-        if type(mp) == list:
-            merged_mps += list(mp)
-        elif getattr(mp, "type") == "MultiPolygon":
-            merged_mps += list(mp)
-        elif getattr(mp, "type") == "Polygon":
+        if mp.geom_type == "MultiPolygon":
+            merged_mps += list(mp.geoms)
+        elif mp.geom_type == "Polygon":
             merged_mps.append(mp)
+        elif isinstance(mp, list):
+            merged_mps += list(mp)
+
     return sg.MultiPolygon(merged_mps)
