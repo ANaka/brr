@@ -1,6 +1,9 @@
-from dataclasses import dataclass, field
+from typing import Union
 
 import numpy as np
+from geodude.parameter import Prm, unpack_prms
+from makefun import wraps
+from shapely import Geometry, MultiPolygon
 from shapely import affinity as sa
 from shapely.geometry import box
 
@@ -97,65 +100,77 @@ def ensure_collection(x, length):
         return scalar_to_collection(x, length)
 
 
-def buffer_translate(p, d_buffer, d_translate, angle, cap_style=2, join_style=2, **kwargs):
-    xoff = np.cos(angle) * d_translate
-    yoff = np.sin(angle) * d_translate
-    bp = p.buffer(d_buffer, cap_style=cap_style, join_style=join_style, **kwargs)
-    btp = sa.translate(bp, xoff=xoff, yoff=yoff)
-    return btp
+def angle_translate(geom: Geometry, d_translate: float, deg: float = None, rad: float = None, **kwargs) -> Geometry:
+    assert (deg is None) ^ (rad is None), "must specify either deg or rad"
+    if deg is not None:
+        rad = np.deg2rad(deg)
+    xoff = np.cos(rad) * d_translate
+    yoff = np.sin(rad) * d_translate
+    return sa.translate(geom, xoff=xoff, yoff=yoff, **kwargs)
 
 
-def multi_buffer_translate(
-    p, d_buffers, d_translates, angles, cap_style=2, join_style=2, return_original=True, **kwargs
+@unpack_prms
+def buffer_translate(
+    geom: Geometry,
+    d_buffer: float,
+    d_translate: float,
+    deg: float = None,
+    rad: float = None,
+    resolution=16,
+    quad_segs=8,
+    cap_style="round",
+    join_style="round",
+    mitre_limit=5.0,
+    single_sided=False,
+    **kwargs,
+):
+    bp = geom.buffer(
+        distance=d_buffer,
+        cap_style=cap_style,
+        join_style=join_style,
+        resolution=resolution,
+        quad_segs=quad_segs,
+        mitre_limit=mitre_limit,
+        single_sided=single_sided,
+    )
+    return angle_translate(bp, d_translate, deg=deg, rad=rad, **kwargs)
+
+
+@wraps(buffer_translate)
+def buft(*args, **kwargs):
+    return buffer_translate(*args, **kwargs)
+
+
+def buft_fill(
+    geom,
+    d_buffer: Union[float, Prm] = None,
+    d_translate: Union[float, Prm] = None,
+    deg: Union[float, Prm] = None,
+    rad: Union[float, Prm] = None,
+    n_iters: int = 200,
+    include_original: bool = True,
+    **kwargs,
 ):
 
-    d_translates = ensure_collection(d_translates, length=len(d_buffers))
-    angles = ensure_collection(angles, length=len(d_buffers))
+    if d_buffer is None:
+        d_buffer = Prm(-0.9)
 
-    ssps = []
-    if return_original:
-        ssps.append(p)
+    if d_translate is None:
+        d_translate = Prm(lambda: Prm(d_buffer)() * 0.9)
 
-    ssp = p
-    for d_buffer, d_translate, angle in zip(d_buffers, d_translates, angles):
-        ssp = buffer_translate(ssp, d_buffer, d_translate, angle, cap_style, join_style, **kwargs)
-        if ssp.area < np.finfo(float).eps:
+    geoms = []
+    if include_original:
+        geoms.append(geom)
+    for ii in range(n_iters):
+        geom = buft(
+            geom=geom,
+            d_buffer=d_buffer,
+            d_translate=d_translate,
+            deg=deg,
+            rad=rad,
+            **kwargs,
+        )
+        if geom.area < np.finfo(float).eps:
             break
-        ssps.append(ssp)
-    return ssps
-
-
-@dataclass
-class MultiBufferTranslatePrms:
-    """
-    pt = Point(0,0)
-    poly = Poly(pt.buffer(10))
-    prms = ScaleTransPrms(
-        n_iters=200,
-        d_buffer=-0.25,
-        d_translate_factor=0.7,
-        angles=0,
-    )
-    poly.fill_scale_trans(**prms.prms)
-    """
-
-    n_iters: int = 100
-    d_buffer: float = -0.25
-    d_translate_factor: float = 0.9
-    d_translate: float = None
-    angles: float = 0.0  # radians
-    d_translates: list = field(default=None, init=False)
-
-    def __post_init__(self):
-        self.d_buffers = np.array([self.d_buffer] * self.n_iters)
-
-        if self.d_translates is None:
-            if self.d_translate is not None:
-                self.d_translates = np.array([self.d_translate] * self.n_iters)
-            else:
-                self.d_translates = self.d_buffers * self.d_translate_factor
-
-    @property
-    def prms(self):
-        varnames = ["d_buffers", "d_translates", "angles"]
-        return {var: getattr(self, var) for var in varnames}
+        geoms.append(geom)
+    return MultiPolygon(geoms)
