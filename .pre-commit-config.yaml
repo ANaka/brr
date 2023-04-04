@@ -72,3 +72,14 @@ repos:
         args: ["--py38-plus"]
       - id: nbqa-isort
         args: ["--float-to-top"]
+
+  # dvc monitoring for svgs
+  - repo: local
+    hooks:
+    - id: dvc-auto-add
+      name: DVC Auto Add
+      entry: poetry run python libraries/dvcwatch/dvcwatch/autoadd.py
+      language: system
+      always_run: true
+      pass_filenames: false
+      args: ["outputs", ".svg"] # Change this to the directory you want to watch

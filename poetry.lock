@@ -31,10 +31,25 @@ tests = ["attrs[tests-no-zope]", "zope.interface"]
 tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy (>=0.971,<0.990)", "mypy (>=0.971,<0.990)", "pympler", "pympler", "pytest (>=4.3.0)", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-mypy-plugins", "pytest-xdist[psutil]", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "click"
+version = "8.1.3"
+description = "Composable command line interface toolkit"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
+    {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -153,54 +168,6 @@ files = [
 ]
 
 [[package]]
-name = "pyclipper"
-version = "1.3.0.post4"
-description = "Cython wrapper for the C++ translation of the Angus Johnson's Clipper library (ver. 6.4.2)"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:1bf6fb4cd6a2896ff5c6dd36216a5f1bad31228adc93089ae9ca37e7787f7579"},
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:aef494d78866ee969a5ea2e80a4660eccb91ddb169a66a5faf44dc83785a8acc"},
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:48952f423c3f247aa886865361a25cfeec870fd4836b01d66c6c96ce018e4845"},
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:46a52e5240b8add6c6809f76363eb9b4cf31a7c1c67f377dc303b635c339ca93"},
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-win32.whl", hash = "sha256:8a45fd8cac0e12e988ce5055ffa6e8b186d3fbc74cfbeab9c85f28c5939b3563"},
-    {file = "pyclipper-1.3.0.post4-cp310-cp310-win_amd64.whl", hash = "sha256:7444f240598f3dacef35beb2eb3428e7c5d311bc392794dc2ee85bd8246f785c"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:0701cd87111ee9532f57710410a4c70e90dda845c9514e789c67672b39d22666"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:a3db170ed63b39edba14bb8d7513d7947e3c997e24999e428eecab219322f153"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8734f3985210f4e76835d8bfd4fcadf4e10555c3c52fdbcdc303f1445d17d131"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:69446e4bcfdae3aa70ea1cc4a7df45a7502520b2773075b868d063297fde1b5f"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-win32.whl", hash = "sha256:2bfa2914b6dc8d1bae8879b59bbb032524d3da3dfd9e898745b9fb9e86756b4a"},
-    {file = "pyclipper-1.3.0.post4-cp311-cp311-win_amd64.whl", hash = "sha256:85c4f1790788fc963bab9bf85e927c6094c016ba88cd7c31f4f33e2753eb967e"},
-    {file = "pyclipper-1.3.0.post4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:26bf2c82cbd9494bde1ebce091f7e48ec6b74f1181c991008f632d604d8e22b9"},
-    {file = "pyclipper-1.3.0.post4-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b8c770e0c287da9aeb0e312d7065530c038007bcce3200b7d6b9e952acf5b823"},
-    {file = "pyclipper-1.3.0.post4-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:ffd660d89b1aefdcac80674e77cb914a98945dab4e7ed408930a692ff63c3cca"},
-    {file = "pyclipper-1.3.0.post4-cp36-cp36m-win32.whl", hash = "sha256:c368ff1deb63e9eb96dd8eb8cef96217b20846d899debb6301947673cc277e90"},
-    {file = "pyclipper-1.3.0.post4-cp36-cp36m-win_amd64.whl", hash = "sha256:c46c286ade64face309e1d9bf33ffe105370fe7d519e46ab009247cab147ecb2"},
-    {file = "pyclipper-1.3.0.post4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b12fe98060eb66ad3b6562f26af3313a97b95179dce334ddff74eb079cc35ca2"},
-    {file = "pyclipper-1.3.0.post4-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:72e2f73ad3bc746dbafd5bb51aa51db4b0ae8b8494421b07fbda0a212e42bf64"},
-    {file = "pyclipper-1.3.0.post4-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:2ca4a657b5bcd677ae66edd659db5bdbffbb469ea5364c5d05019ef7b666ac6a"},
-    {file = "pyclipper-1.3.0.post4-cp37-cp37m-win32.whl", hash = "sha256:78f8b557ccd08df0b1e73f5afe1c7e44731bbddc1995ec91e3c2a6ad38494bf9"},
-    {file = "pyclipper-1.3.0.post4-cp37-cp37m-win_amd64.whl", hash = "sha256:edf19554bd93086a6762f3abb94702d43ea621fb60219a35c95e21bd5d416ff0"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:3dfd7203ced42130b9860e399361277c50ccc8037db7f4dd65c0880f34f1a6b4"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d965280c2e3b8de897ee84535b0b8cd0fb34de56cc54941600899592e53f4489"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5936fe0cb7bd6c4a4a4dd596961b7de1e6ffd4a3b169b910a4f2b6e675183172"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:d10788bd86d8d0f531685e23802350f213c789b149a5ef3ef997d37f4f21b7dc"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-win32.whl", hash = "sha256:0281af05a9e5fd835bffc3ce5a0f37c1b01e568ba3b890b6a0edb139f99b261c"},
-    {file = "pyclipper-1.3.0.post4-cp38-cp38-win_amd64.whl", hash = "sha256:d2796de8d5fb4bc5112085757c726e7bd0221396f1ea0f029e66dc0b7d0ae877"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:a9800a5ae54c5691a6e5e342de3295744bb6dec0e038013d8b1aa9f8cae04ecf"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:bde378db039e8767a0a970d2215a17cf52c4414db917654b68e37f4bd00ece31"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4e517c805dbed93e5aebd61fa5c9d87be8b536e9d9acb10615a824525e3f0118"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:328034724b02abe4e424481ba102b0a42c01b19cbe908f3ab4ba50afdcd562eb"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-win32.whl", hash = "sha256:0da02c4746204a5d71f332c31be0e6a9e5f4e900f406981f09cb61ddd171112c"},
-    {file = "pyclipper-1.3.0.post4-cp39-cp39-win_amd64.whl", hash = "sha256:6ccdc04425ef1863349998f3b5abd3bf5ab710ac927b0b13cac758527d0dbddf"},
-    {file = "pyclipper-1.3.0.post4-pp37-pypy37_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:455ebc384f7cade1f0795398ce32e1a9d7354ba507eb7705e104d8436f51bd07"},
-    {file = "pyclipper-1.3.0.post4-pp38-pypy38_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:0bb994b4d010a893aeb18bf2fc5fb05f8560c7c79ce96ff33bab40d574e8b19c"},
-    {file = "pyclipper-1.3.0.post4-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b43cf984448bbb74a3e2ec21716ca06437350232803d86ad590b0e4d3f45fd35"},
-    {file = "pyclipper-1.3.0.post4.tar.gz", hash = "sha256:b73b19d2a1b895edcacaf4acb441e13e99b9e5fd53b9c0dfd2e1326e2bf68a7a"},
-]
-
-[[package]]
 name = "pytest"
 version = "5.4.3"
 description = "pytest: simple powerful testing with Python"
@@ -292,4 +259,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b5b2f85cfc6d358c827d9d48290b9de36e0f797c7b2780a3d52f455ad3343011"
+content-hash = "78eef71cef4a115e93006ab3e7231e0f54be1e66cd2af48aa7cf75c237ef1807"

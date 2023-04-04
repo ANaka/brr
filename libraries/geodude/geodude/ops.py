@@ -2,8 +2,9 @@ from typing import Union
 
 import numpy as np
 from geodude.parameter import Prm, unpack_prms
+from geodude.utils import merge_Polygons
 from makefun import wraps
-from shapely import Geometry, MultiPolygon
+from shapely import Geometry
 from shapely import affinity as sa
 from shapely.geometry import box
 
@@ -173,4 +174,4 @@ def buft_fill(
         if geom.area < np.finfo(float).eps:
             break
         geoms.append(geom)
-    return MultiPolygon(geoms)
+    return merge_Polygons(geoms)

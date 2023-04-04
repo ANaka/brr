@@ -114,9 +114,9 @@ def flatten_geoms(
         else:  # assume Polygon or LineString
             geoms = [geoms]
     elif isinstance(geoms, gpd.GeoDataFrame):
-        geoms = geoms.geometry.to_list()
+        geoms = list(geoms.geometry.values)
     elif isinstance(geoms, gpd.GeoSeries):
-        geoms = geoms.to_list()
+        geoms = list(geoms)
 
     merged_geoms: List[Geometry] = []
     for geom in geoms:
@@ -124,6 +124,10 @@ def flatten_geoms(
             merged_geoms.extend(geom)
         elif hasattr(geom, "geoms"):
             merged_geoms.extend(list(geom.geoms))
+        elif isinstance(geom, gpd.GeoDataFrame):
+            geoms.extend(geom.geometry.to_list())
+        elif isinstance(geom, gpd.GeoSeries):
+            geoms.extend(geom.to_list())
         else:
             merged_geoms.append(geom)
 
