@@ -3,8 +3,8 @@ from geodude.intersection import (
     find_intersecting_polys,
     find_touching_polys,
     pairwise_partition_polygons,
-    polys_to_gdf,
 )
+from geodude.utils import flatten_geoms
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
@@ -16,7 +16,7 @@ def test_pairwise_partition_polygons():
     r3 = Polygon([(10, 0), (10, 10), (20, 10), (20, 0)])
 
     geoms = [r1, r2, r3]
-    gdf = polys_to_gdf(geoms)
+    gdf = flatten_geoms(geoms)
 
     disjoint, n_intersections_log = pairwise_partition_polygons(gdf)
 
