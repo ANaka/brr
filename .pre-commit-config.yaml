@@ -62,13 +62,13 @@ repos:
   #   hooks:
   #     - id: nbstripout
 
-  # jupyter notebook code formatting
-  # - repo: https://github.com/nbQA-dev/nbQA
-  #   rev: 1.6.1
-  #   hooks:
-  #     - id: nbqa-black
-  #       additional_dependencies: [black]  # optional, only if you're using Jupytext
-  #     - id: nbqa-pyupgrade
-  #       args: ["--py38-plus"]
-  #     - id: nbqa-isort
-  #       args: ["--float-to-top"]
+  #jupyter notebook code formatting
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.6.1
+    hooks:
+      # - id: nbqa-black
+      #   additional_dependencies: [black]  # optional, only if you're using Jupytext
+      # - id: nbqa-pyupgrade
+      #   args: ["--py38-plus"]
+      - id: nbqa-isort
+        args: ["--float-to-top"]
