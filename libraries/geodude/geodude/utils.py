@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import geopandas as gpd
 import shapely.geometry as sg
 from shapely import Geometry
@@ -100,3 +102,32 @@ def merge_Polygons(mp_list):
             merged_mps += list(mp)
 
     return sg.MultiPolygon(merged_mps)
+
+
+def flatten_geom_collection(
+    geoms: Union[gpd.GeoDataFrame, gpd.GeoSeries, List[Geometry]],
+    as_gdf: bool = True,
+) -> Union[gpd.GeoDataFrame, List[Geometry]]:
+    if isinstance(geoms, Geometry):
+        if hasattr(geoms, "geoms"):
+            geoms = list(geoms.geoms)
+        else:  # assume Polygon or LineString
+            geoms = [geoms]
+    elif isinstance(geoms, gpd.GeoDataFrame):
+        geoms = geoms.geometry.to_list()
+    elif isinstance(geoms, gpd.GeoSeries):
+        geoms = geoms.to_list()
+
+    merged_geoms: List[Geometry] = []
+    for geom in geoms:
+        if isinstance(geom, list):
+            merged_geoms.extend(geom)
+        elif hasattr(geom, "geoms"):
+            merged_geoms.extend(list(geom.geoms))
+        else:
+            merged_geoms.append(geom)
+
+    if as_gdf:
+        return gpd.GeoDataFrame(geometry=merged_geoms)
+    else:
+        return merged_geoms
