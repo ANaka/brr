@@ -1,85 +1,150 @@
 import itertools
 from collections import deque
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely.errors import GEOSException
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from tqdm import tqdm
 
 
-def polys_to_gdf(polygons: Union[List, MultiPolygon]):
-    try:
-        if polygons.geom_type == "MultiPolygon":
-            polygons = polygons.geoms
-    except AttributeError:
-        pass
+def find_intersecting_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
+    """Find intersecting polygons
 
-    # Create a GeoDataFrame from the input polygons with an additional column to store the index
-    return gpd.GeoDataFrame({"geometry": polygons})
+    Parameters
+    ----------
+    geoms : List[Polygon]
+        List of Shapely polygons
+    vectorized : bool, optional
+        Whether to use vectorized operations, by default True
 
+    Returns
+    -------
+    Dict[int, set]
+        A map of polygon indices to the indices of intersecting polygons
 
-def find_intersecting_polys(geoms: List[Polygon]) -> Dict[int, set]:
+     Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(1, 0), (1, 1), (2, 1), (2, 0)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_touching_polys(geoms)
+    {0: {1}, 1: {0}, 2: set()}
+    """
     intersection_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.combinations(range(len(geoms)), 2):
-        if geoms[ii].buffer(-1e-6).intersects(geoms[jj].buffer(-1e-6)):
-            intersection_map[ii].add(jj)
-            intersection_map[jj].add(ii)
-    return intersection_map
-
-
-def find_intersectiong_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
-    intersection_map = {ii: set() for ii in range(len(geoms))}
-    gs = gpd.GeoSeries(geoms).buffer(-1e-6)
-    for ii in range(len(geoms)):
-        _gs = gs.copy()
-        current = _gs.pop(ii)
-        intersection_map[ii] = set(_gs.loc[_gs.intersects(current)].index)
-    return intersection_map
-
-
-def find_touching_polys(geoms: List[Polygon]) -> Dict[int, set]:
-    intersection_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.combinations(range(len(geoms)), 2):
-        try:
-            if geoms[ii].touches(geoms[jj]):
+    if vectorized:
+        gs = gpd.GeoSeries(geoms).buffer(-1e-6)
+        for ii in range(len(geoms)):
+            _gs = gs.copy()
+            current = _gs.pop(ii)
+            intersection_map[ii] = set(_gs.loc[_gs.intersects(current)].index)
+        return intersection_map
+    else:
+        for ii, jj in itertools.combinations(range(len(geoms)), 2):
+            if geoms[ii].buffer(-1e-6).intersects(geoms[jj].buffer(-1e-6)):
                 intersection_map[ii].add(jj)
                 intersection_map[jj].add(ii)
-        except GEOSException:
-            if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
-                geoms[jj].buffer(-1e-6)
-            ):
-                intersection_map[ii].add(jj)
-                intersection_map[jj].add(ii)
-    return intersection_map
+        return intersection_map
 
 
-def find_touching_polys_vectorized(geoms: List[Polygon]) -> Dict[int, set]:
+def find_touching_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
+    """Find touching polygons
+
+    Parameters
+    ----------
+    geoms : List[Polygon]
+        List of Shapely polygons
+    vectorized : bool, optional
+        Whether to use vectorized operations, by default True
+
+    Returns
+    -------
+    Dict[int, set]
+        A map of polygon indices to the indices of touching polygons
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(1, 0), (1, 1), (2, 1), (2, 0)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_touching_polys(geoms)
+    {0: {1}, 1: {0}, 2: set()}
+    """
     intersection_map = {ii: set() for ii in range(len(geoms))}
-    gs_dilated = gpd.GeoSeries(geoms).buffer(1e-6)
-    gs_eroded = gpd.GeoSeries(geoms).buffer(-1e-6)
-    for ii in range(len(geoms)):
-        _gs_dilated = gs_dilated.copy()
-        _gs_eroded = gs_eroded.copy()
-        current_dilated = _gs_dilated.pop(ii)
-        current_eroded = _gs_eroded.pop(ii)
-        intersects_dilated = _gs_dilated.intersects(current_dilated)
-        intersects_eroded = _gs_eroded.intersects(current_eroded)
-        touches_idx = intersects_dilated & ~intersects_eroded
-        intersection_map[ii] = set(_gs_dilated.loc[touches_idx].index)
-    return intersection_map
+    if vectorized:
+        gs_dilated = gpd.GeoSeries(geoms).buffer(1e-6)
+        gs_eroded = gpd.GeoSeries(geoms).buffer(-1e-6)
+        for ii in range(len(geoms)):
+            _gs_dilated = gs_dilated.copy()
+            _gs_eroded = gs_eroded.copy()
+            current_dilated = _gs_dilated.pop(ii)
+            current_eroded = _gs_eroded.pop(ii)
+            intersects_dilated = _gs_dilated.intersects(current_dilated)
+            intersects_eroded = _gs_eroded.intersects(current_eroded)
+            touches_idx = intersects_dilated & ~intersects_eroded
+            intersection_map[ii] = set(_gs_dilated.loc[touches_idx].index)
+        return intersection_map
+    else:
+        for ii, jj in itertools.combinations(range(len(geoms)), 2):
+            try:
+                if geoms[ii].touches(geoms[jj]):
+                    intersection_map[ii].add(jj)
+                    intersection_map[jj].add(ii)
+            except GEOSException:
+                if geoms[ii].buffer(1e-6).intersects(geoms.buffer(1e-6)[jj]) and not geoms[ii].buffer(-1e-6).intersects(
+                    geoms[jj].buffer(-1e-6)
+                ):
+                    intersection_map[ii].add(jj)
+                    intersection_map[jj].add(ii)
+        return intersection_map
 
 
-def find_contained_polys(geoms: List[Polygon]) -> Dict[int, set]:
+def find_contained_polys(geoms: List[Polygon], vectorized: bool = True) -> Dict[int, set]:
+    """Find contained polys
+
+    Parameters
+    ----------
+    geoms : List[Polygon]
+        List of Shapely polygons
+    vectorized : bool, optional
+        Whether to use vectorized operations, by default True
+
+    Returns
+    -------
+    Dict[int, set]
+        A map of polygon indices to the indices of contained polygons
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 2), (2, 2), (2, 0)])
+    >>> poly2 = Polygon([(0.5, 0.5), (0.5, 1.5), (1.5, 1.5), (1.5, 0.5)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> find_contained_polys(geoms)
+    {0: {1}, 1: set(), 2: set()}
+    """
     contains_map = {ii: set() for ii in range(len(geoms))}
-    for ii, jj in itertools.product(range(len(geoms)), range(len(geoms))):
-        if ii != jj:
-            if geoms[ii].buffer(1e-6).contains(geoms[jj].buffer(1e-7)):
-                contains_map[ii].add(jj)
-    return contains_map
+    if vectorized:
+        gs = gpd.GeoSeries(geoms).buffer(1e-6)
+        for ii in range(len(geoms)):
+            _gs = gs.copy()
+            current = _gs.pop(ii)
+            contains_map[ii] = set(_gs.loc[_gs.contains(current)].index)
+        return contains_map
+    else:
+        for ii, jj in itertools.product(range(len(geoms)), range(len(geoms))):
+            if ii != jj:
+                if geoms[ii].buffer(1e-6).contains(geoms[jj].buffer(1e-7)):
+                    contains_map[ii].add(jj)
+        return contains_map
 
 
 def one_vs_all_differences(geoms: List[Polygon], intersection_map: Dict[int, set]) -> List[Polygon]:
@@ -95,13 +160,39 @@ def pairwise_partition_polygons(
     verbose: bool = False,
     min_area: float = None,
 ) -> Tuple[gpd.GeoDataFrame, List[int]]:
+    """Pairwise partition polygons
+
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame containing polygons to partition
+    verbose : bool, optional
+        Whether to print progress, by default False
+    min_area : float, optional
+        Minimum area of partitioned polygons, by default None
+
+    Returns
+    -------
+    Tuple[gpd.GeoDataFrame, List[int]]
+        [description]
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> poly2 = Polygon([(0.5, 0.5), (0.5, 1.5), (1.5, 1.5), (1.5, 0.5)])
+    >>> poly3 = Polygon([(2, 2), (2, 3), (3, 3), (3, 2)])
+    >>> geoms = [poly1, poly2, poly3]
+    >>> intersection_map = find_intersecting_polys(geoms)
+    >>> one_vs_all_differences(geoms, intersection_map)
+    """
     total_n_intersections = 1
 
     disjoint_gdfs = []
     n_intersections_log = []
     while total_n_intersections > 0:
         gdf = gdf.reset_index(drop=True)
-        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
+        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
 
         # remove disjoint polys
@@ -168,6 +259,24 @@ def find_parent_polygons(
     buffer_distance: float = -1e-6,
     min_norm_area: float = 0.5,  # theoretically this should be 1.0
 ) -> gpd.GeoDataFrame:
+    """Find parent polygons of a set of partitioned polygons
+
+    Parameters
+    ----------
+    disjoint : gpd.GeoDataFrame
+        GeoDataFrame containing partitioned polygons
+    original : gpd.GeoDataFrame
+        GeoDataFrame containing original polygons
+    buffer_distance : float, optional
+        Buffer distance to use when finding intersecting polygons, by default -1e-6
+    min_norm_area : float, optional
+        Minimum normalized area of intersecting polygons, by default 0.5
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame containing partitioned polygons with the intersecting original polygons
+    """
 
     disjoint.loc[:, "intersecting_original_polygons"] = [set() for _ in range(len(disjoint))]
     disjoint.loc[:, "areas"] = [dict() for _ in range(len(disjoint))]
@@ -201,14 +310,14 @@ def find_parent_polygons(
 
 
 def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
-    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
+    disjoint["adjacent_polys"] = find_touching_polys(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
     valid_adjacency_list = {
         k: v.intersection(overlap_idx) for k, v in is_an_overlap["adjacent_polys"].to_dict().items()
     }
-    clusters = find_clusters(valid_adjacency_list)
+    clusters = find_adjacency_clusters(valid_adjacency_list)
 
     all_parents = set().union(*disjoint["intersecting_original_polygons"].to_list())
     order = deque(all_parents)
@@ -225,14 +334,14 @@ def assign_psuedoperiodic_order_to_adjacent_clusters(disjoint):
 
 
 def assign_random_order_to_adjacent_clusters(disjoint):
-    disjoint["adjacent_polys"] = find_touching_polys_vectorized(disjoint.geometry)
+    disjoint["adjacent_polys"] = find_touching_polys(disjoint.geometry)
     idx = disjoint["n_parents"] == 1
     is_an_overlap = disjoint.loc[~idx]
     overlap_idx = set(is_an_overlap.index)
     valid_adjacency_list = {
         k: v.intersection(overlap_idx) for k, v in is_an_overlap["adjacent_polys"].to_dict().items()
     }
-    clusters = find_clusters(valid_adjacency_list)
+    clusters = find_adjacency_clusters(valid_adjacency_list)
 
     for ii, cluster in enumerate(clusters):
         valid_parents = set().union(*disjoint.loc[cluster]["intersecting_original_polygons"].to_list())
@@ -253,6 +362,18 @@ def assign_random_order_to_adjacent_clusters(disjoint):
 
 
 def merge_disjoint_polys(disjoint: gpd.GeoDataFrame):
+    """Merge partitioned polygons into their original polygons
+
+    Parameters
+    ----------
+    disjoint : gpd.GeoDataFrame
+        GeoDataFrame containing partitioned polygons
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame containing merged polygons
+    """
     new_polys = []
     parents = []
     for parent, sub_gdf in disjoint.groupby("parent"):
@@ -269,7 +390,21 @@ def merge_disjoint_polys(disjoint: gpd.GeoDataFrame):
     return gpd.GeoDataFrame(dict(geometry=new_polys, parent=parents))
 
 
-def find_clusters(adjacency_list: Dict[int, set], use_bfs: bool = True) -> List[List[int]]:
+def find_adjacency_clusters(adjacency_list: Dict[int, set], use_bfs: bool = True) -> List[List[int]]:
+    """Find clusters from an adjacency list
+
+    Parameters
+    ----------
+    adjacency_list : Dict[int, set]
+        Adjacency list
+    use_bfs : bool, optional
+        Whether to use BFS or DFS, by default True
+
+    Returns
+    -------
+    List[List[int]]
+        List of clusters, each cluster is a list of node ids
+    """
     visited = set()
     clusters = []
 
@@ -304,16 +439,39 @@ def find_clusters(adjacency_list: Dict[int, set], use_bfs: bool = True) -> List[
     return clusters
 
 
-def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int = 100, **kwargs):
+def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int = 100, verbose: bool = False, **kwargs):
+    """Partition polygons in chunks
+
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame containing polygons
+    chunk_size : int, optional
+        Chunk size, by default 100
+    verbose : bool, optional
+        Whether to print progress, by default False
+    **kwargs
+        Keyword arguments to pass to partition_polygons
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame containing partitioned polygons
+
+    Examples
+    --------
+
+    """
     total_n_intersections = 1
     iteration_num = 0
     disjoint_gdfs = []
     while total_n_intersections > 0:
         iteration_num += 1
         gdf = gdf.reset_index(drop=True)
-        print(f"Iteration {iteration_num}")
-        print(f"Finding intersections in {len(gdf)} polygons")
-        gdf["intersectors"] = find_intersectiong_polys_vectorized(gdf.geometry)
+        if verbose:
+            print(f"Iteration {iteration_num}")
+            print(f"Finding intersections in {len(gdf)} polygons")
+        gdf["intersectors"] = find_intersecting_polys(gdf.geometry)
         gdf["n_intersections"] = gdf.intersectors.apply(len)
         # remove disjoint polys
         is_disjoint = gdf.n_intersections == 0
@@ -324,10 +482,12 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
         gdf = gdf[~is_disjoint]
 
         total_n_intersections = gdf.n_intersections.sum()
-        print(f"{total_n_intersections} intersections remaining")
+
         chunks = []
         used_indices = set()
-        print("Chunking polygons")
+        if verbose:
+            print(f"{total_n_intersections} intersections remaining")
+            print("Chunking polygons")
         while len(used_indices) < len(gdf):
             # pick random row to start with
             global_indices_to_pick_from = set(gdf.index) - used_indices
@@ -359,17 +519,15 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
                 global_indices_to_pick_from = set(gdf.index) - used_indices
 
             chunks.append(current_chunk)
-            # print(f'Chunk {len(chunks)}: {len(current_chunk)} polygons, {len(global_indices_to_pick_from)} polygons remaining')
 
         if len(chunks) == 0:
             break
-
-        print(f"Partitioning {len(chunks)} chunks")
-        for ii, chunk in tqdm(enumerate(chunks)):
-            # current_chunk_intersections = chunk.n_intersections.sum()
-            # print(
-            #     f"Partitioning chunk {ii+1}/{len(chunks)} ({len(chunk)} polygons, {current_chunk_intersections} intersections)"
-            # )
+        if verbose:
+            print(f"Partitioning {len(chunks)} chunks")
+            iterator = tqdm(enumerate(chunks))
+        else:
+            iterator = enumerate(chunks)
+        for ii, chunk in iterator:
             chunk, _ = pairwise_partition_polygons(chunk, **kwargs)
             chunks[ii] = chunk
 
@@ -378,7 +536,8 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
 
         # scramble
         gdf = gdf.sample(frac=1, replace=False).reset_index(drop=True)
-        print(f"Iteration {iteration_num} complete, {len(gdf)} polygons remaining")
+        if verbose:
+            print(f"Iteration {iteration_num} complete, {len(gdf)} polygons remaining")
     disjoint_gdfs.append(gdf)
 
     gdf = gpd.GeoDataFrame(pd.concat(disjoint_gdfs)).reset_index(drop=True)
