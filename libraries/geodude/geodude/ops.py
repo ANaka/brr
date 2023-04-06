@@ -220,7 +220,39 @@ def _(line):
 
 
 def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString], longest_dim_first: bool = True):
+    """
+    Computes and returns the affine basis matrix and its inverse based on the input array.
 
+    Parameters
+    ----------
+    arr : Union[np.ndarray, tuple, list, LineString]
+        The input array, which can be of type np.ndarray, tuple, list, or LineString.
+        Must have shape (2,) or (2, 2). If the input array has shape (2,), the origin
+        is prepended to form a 2x2 array.
+
+    longest_dim_first : bool, optional, default: False
+        If True, ensures that the longest dimension of the input vector is mapped onto
+        the first dimension of the new basis. If False, the basis is formed without
+        considering the longest dimension.
+
+    Returns
+    -------
+    affine_basis_matrix : np.ndarray
+        The 3x3 affine basis matrix, including scaling, rotation, and translation components.
+
+    affine_inverse_basis_matrix : np.ndarray
+        The 3x3 inverse of the affine basis matrix.
+
+    Raises
+    ------
+    ValueError
+        If the input array does not have shape (2, 2) or (2,).
+
+    Example
+    -------
+    >>> arr = np.array([[0, 0], [2, 3]])
+    >>> A, A_inv = form_affine_basis(arr, longest_dim_first=True)
+    """
     # cast to numpy
     if isinstance(arr, LineString):
         arr = np.array(arr.coords)
