@@ -1,4 +1,4 @@
-from functools import singledispatch
+from functools import partial, singledispatch
 from typing import Union
 
 import numpy as np
@@ -219,15 +219,27 @@ def _(line):
     return form_orthonormal_basis(vec)
 
 
-@singledispatch
-def form_affine_orthonormal_basis(vec):
-    raise NotImplementedError("Input type not supported")
+def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString]):
 
+    # cast to numpy
+    if isinstance(arr, LineString):
+        arr = np.array(arr.coords)
+    else:
+        arr = np.array(arr)
 
-# Register the specialized function for numpy.ndarray input type
-@form_affine_orthonormal_basis.register(np.ndarray)
-def _(vec):
-    # Normalize the input vector
+    # If the input array has shape=(2,), prepend the origin to form a 2x2 array
+    if arr.shape == (2,):
+        arr = np.vstack(([0, 0], arr))
+
+    # Ensure that the input array has shape=(2,2)
+    if arr.shape != (2, 2):
+        raise ValueError(f"Input array must have shape=(2,2) or shape=(2,), but shape is {arr.shape}")
+
+    # Extract the start and end points (translation components and vector)
+    start, vec = arr
+    tx, ty = start
+
+    # Normalize the vector
     vec = vec / np.linalg.norm(vec)
 
     # Generate an orthogonal vector
@@ -248,19 +260,16 @@ def _(vec):
     # Convert the 2x2 matrices to 3x3 affine transformation matrices
     affine_basis_matrix = np.eye(3)
     affine_basis_matrix[:2, :2] = basis_matrix
+    affine_basis_matrix[:2, 2] = [tx, ty]  # Add translation components
 
     affine_inverse_basis_matrix = np.eye(3)
     affine_inverse_basis_matrix[:2, :2] = inverse_basis_matrix
+    affine_inverse_basis_matrix[:2, 2] = -inverse_basis_matrix @ [tx, ty]  # Inverse translation components
 
     return affine_basis_matrix, affine_inverse_basis_matrix
 
 
-# Register the specialized function for shapely.geometry.LineString input type
-@form_affine_orthonormal_basis.register(LineString)
-def _(line):
-    # Extract the start and end points of the LineString
-    start, end = line.coords
-    # Compute the vector representing the LineString
-    vec = np.array(end) - np.array(start)
-    # Call the function for numpy.ndarray input type to compute the affine orthonormal basis
-    return form_affine_orthonormal_basis(vec)
+def get_affine_transformation(arr: Union[LineString, np.ndarray]):
+    A, A_inv = form_affine_basis(arr)
+    coefs = np.concatenate((A[0, :2], A[1, :2], A[:2, 2]))
+    return partial(sa.affine_transform, matrix=coefs)
