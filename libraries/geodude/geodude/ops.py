@@ -1,10 +1,11 @@
+from functools import singledispatch
 from typing import Union
 
 import numpy as np
 from geodude.parameter import Prm, unpack_prms
 from geodude.utils import merge_Polygons
 from makefun import wraps
-from shapely import Geometry
+from shapely import Geometry, LineString
 from shapely import affinity as sa
 from shapely.geometry import box
 
@@ -175,3 +176,91 @@ def buft_fill(
             break
         geoms.append(geom)
     return merge_Polygons(geoms)
+
+
+# Define the base function for forming an orthonormal basis
+@singledispatch
+def form_orthonormal_basis(vec):
+    raise NotImplementedError("Input type not supported")
+
+
+# Register the specialized function for numpy.ndarray input type
+@form_orthonormal_basis.register(np.ndarray)
+def _(vec):
+    # Normalize the input vector
+    vec = vec / np.linalg.norm(vec)
+
+    # Generate an orthogonal vector
+    if vec[1] == 0:
+        orthogonal_vec = np.array([0, 1])
+    else:
+        orthogonal_vec = np.array([-vec[1], vec[0]])
+
+    # Normalize the orthogonal vector
+    orthogonal_vec = orthogonal_vec / np.linalg.norm(orthogonal_vec)
+
+    # Form the orthonormal basis matrix
+    basis_matrix = np.column_stack((vec, orthogonal_vec))
+
+    # Compute the inverse of the basis matrix
+    inverse_basis_matrix = np.linalg.inv(basis_matrix)
+
+    return basis_matrix, inverse_basis_matrix
+
+
+# Register the specialized function for shapely.geometry.LineString input type
+@form_orthonormal_basis.register(LineString)
+def _(line):
+    # Extract the start and end points of the LineString
+    start, end = line.coords
+    # Compute the vector representing the LineString
+    vec = np.array(end) - np.array(start)
+    # Call the function for numpy.ndarray input type to compute the orthonormal basis
+    return form_orthonormal_basis(vec)
+
+
+@singledispatch
+def form_affine_orthonormal_basis(vec):
+    raise NotImplementedError("Input type not supported")
+
+
+# Register the specialized function for numpy.ndarray input type
+@form_affine_orthonormal_basis.register(np.ndarray)
+def _(vec):
+    # Normalize the input vector
+    vec = vec / np.linalg.norm(vec)
+
+    # Generate an orthogonal vector
+    if vec[1] == 0:
+        orthogonal_vec = np.array([0, 1])
+    else:
+        orthogonal_vec = np.array([-vec[1], vec[0]])
+
+    # Normalize the orthogonal vector
+    orthogonal_vec = orthogonal_vec / np.linalg.norm(orthogonal_vec)
+
+    # Form the orthonormal basis matrix (2x2)
+    basis_matrix = np.column_stack((vec, orthogonal_vec))
+
+    # Compute the inverse of the basis matrix (2x2)
+    inverse_basis_matrix = np.linalg.inv(basis_matrix)
+
+    # Convert the 2x2 matrices to 3x3 affine transformation matrices
+    affine_basis_matrix = np.eye(3)
+    affine_basis_matrix[:2, :2] = basis_matrix
+
+    affine_inverse_basis_matrix = np.eye(3)
+    affine_inverse_basis_matrix[:2, :2] = inverse_basis_matrix
+
+    return affine_basis_matrix, affine_inverse_basis_matrix
+
+
+# Register the specialized function for shapely.geometry.LineString input type
+@form_affine_orthonormal_basis.register(LineString)
+def _(line):
+    # Extract the start and end points of the LineString
+    start, end = line.coords
+    # Compute the vector representing the LineString
+    vec = np.array(end) - np.array(start)
+    # Call the function for numpy.ndarray input type to compute the affine orthonormal basis
+    return form_affine_orthonormal_basis(vec)
