@@ -251,8 +251,11 @@ def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString]):
     # Normalize the orthogonal vector
     orthogonal_vec = orthogonal_vec / np.linalg.norm(orthogonal_vec)
 
+    # Calculate the scaling factor
+    scaling_factor = np.linalg.norm(arr[1] - arr[0])
+
     # Form the orthonormal basis matrix (2x2)
-    basis_matrix = np.column_stack((vec, orthogonal_vec))
+    basis_matrix = scaling_factor * np.column_stack((vec, orthogonal_vec))
 
     # Compute the inverse of the basis matrix (2x2)
     inverse_basis_matrix = np.linalg.inv(basis_matrix)
@@ -270,6 +273,21 @@ def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString]):
 
 
 def get_affine_transformation(arr: Union[LineString, np.ndarray]):
+    """Return a partial function that takes a shapely.geometry object and applies the affine
+    transformation defined by the input array. The input array must have shape=(2,) or (2,2).
+    If the input array has shape=(2,), the origin is prepended to form a 2x2 array.
+
+    from shapely import LineString
+    from geodude.ops import get_affine_transformation
+    from geodude.line import bezier_func
+    line = LineString(((1, 0), (3, 1)))
+    f = get_affine_transformation(line) # af is a partial function
+    g = bezier_func([(0., 0), (.25, 2), (.5, -2), (.75, 3), (1, 0)])
+
+    x = np.linspace(0, 1, 10)
+    bez = g(x)
+    transformed_bez = f(bez)  # i.e. f(g(x))
+    """
     A, A_inv = form_affine_basis(arr)
     coefs = np.concatenate((A[0, :2], A[1, :2], A[:2, 2]))
     return partial(sa.affine_transform, matrix=coefs)
