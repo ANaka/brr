@@ -219,7 +219,7 @@ def _(line):
     return form_orthonormal_basis(vec)
 
 
-def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString]):
+def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString], longest_dim_first: bool = True):
 
     # cast to numpy
     if isinstance(arr, LineString):
@@ -253,6 +253,10 @@ def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString]):
 
     # Calculate the scaling factor
     scaling_factor = np.linalg.norm(arr[1] - arr[0])
+
+    if longest_dim_first:
+        if abs(vec[0]) < abs(vec[1]):
+            vec, orthogonal_vec = orthogonal_vec, vec
 
     # Form the orthonormal basis matrix (2x2)
     basis_matrix = scaling_factor * np.column_stack((vec, orthogonal_vec))
