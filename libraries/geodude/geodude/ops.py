@@ -269,46 +269,43 @@ def form_affine_basis(arr: Union[np.ndarray, tuple, list, LineString], longest_d
 
     # Extract the start and end points (translation components and vector)
     start, vec = arr
-    tx, ty = start
 
-    # Normalize the vector
-    vec = vec / np.linalg.norm(vec)
-
-    # Generate an orthogonal vector
-    if vec[1] == 0:
-        orthogonal_vec = np.array([0, 1])
-    else:
-        orthogonal_vec = np.array([-vec[1], vec[0]])
-
-    # Normalize the orthogonal vector
-    orthogonal_vec = orthogonal_vec / np.linalg.norm(orthogonal_vec)
-
-    # Calculate the scaling factor
-    scaling_factor = np.linalg.norm(arr[1] - arr[0])
-
+    # Calculate the rotation angle based on the longest_dim_first parameter
     if longest_dim_first:
-        if abs(vec[0]) < abs(vec[1]):
-            vec, orthogonal_vec = orthogonal_vec, vec
+        if abs(vec[0]) >= abs(vec[1]):
+            # swapdims
+            start = start[::-1]
+            vec = vec[::-1]
 
-    # Form the orthonormal basis matrix (2x2)
-    basis_matrix = scaling_factor * np.column_stack((vec, orthogonal_vec))
+    tx, ty = start
+    angle = np.arctan2(vec[1], vec[0])
 
-    # Compute the inverse of the basis matrix (2x2)
-    inverse_basis_matrix = np.linalg.inv(basis_matrix)
+    # Generate the rotation matrix
+    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+    # Calculate scaling
+    scale = np.linalg.norm(vec)
+    scaling_matrix = np.array([[scale, 0], [0, scale]])
+
+    # Compute the inverse rotation matrix and inverse scaling matrix
+    inverse_rotation_matrix = rotation_matrix.T
+    inverse_scaling_matrix = np.linalg.inv(scaling_matrix)
 
     # Convert the 2x2 matrices to 3x3 affine transformation matrices
     affine_basis_matrix = np.eye(3)
-    affine_basis_matrix[:2, :2] = basis_matrix
+    affine_basis_matrix[:2, :2] = rotation_matrix @ scaling_matrix
     affine_basis_matrix[:2, 2] = [tx, ty]  # Add translation components
 
     affine_inverse_basis_matrix = np.eye(3)
-    affine_inverse_basis_matrix[:2, :2] = inverse_basis_matrix
-    affine_inverse_basis_matrix[:2, 2] = -inverse_basis_matrix @ [tx, ty]  # Inverse translation components
+    affine_inverse_basis_matrix[:2, :2] = inverse_scaling_matrix @ inverse_rotation_matrix
+    affine_inverse_basis_matrix[:2, 2] = (
+        -inverse_rotation_matrix @ inverse_scaling_matrix @ [tx, ty]
+    )  # Inverse translation components
 
     return affine_basis_matrix, affine_inverse_basis_matrix
 
 
-def get_affine_transformation(arr: Union[LineString, np.ndarray]):
+def get_affine_transformation(arr: Union[LineString, np.ndarray], longest_dim_first: bool = True):
     """Return a partial function that takes a shapely.geometry object and applies the affine
     transformation defined by the input array. The input array must have shape=(2,) or (2,2).
     If the input array has shape=(2,), the origin is prepended to form a 2x2 array.
@@ -324,6 +321,6 @@ def get_affine_transformation(arr: Union[LineString, np.ndarray]):
     bez = g(x)
     transformed_bez = f(bez)  # i.e. f(g(x))
     """
-    A, A_inv = form_affine_basis(arr)
+    A, A_inv = form_affine_basis(arr, longest_dim_first=longest_dim_first)
     coefs = np.concatenate((A[0, :2], A[1, :2], A[:2, 2]))
     return partial(sa.affine_transform, matrix=coefs)
