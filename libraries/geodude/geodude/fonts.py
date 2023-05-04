@@ -139,7 +139,18 @@ def get_character_polygon(font_name, glyph_name, n_points=100):
     subpaths = extract_glyph_points(font_name, glyph_name, n_points=n_points)
     # Create a polygon from the points
     polygon = Polygon(subpaths[0])
+
+    if not polygon.is_valid:
+        polygon = polygon.buffer(1e-19)
+
     # If there are any holes, add them to the polygon
     for subpath in subpaths[1:]:
-        polygon = polygon.difference(Polygon(subpath))
+        subpath_polygon = Polygon(subpath)
+        if subpath_polygon.is_valid:
+            polygon = polygon.difference(subpath_polygon)
+        else:
+            # If the subpath isn't valid, try to fix it with a buffer
+            subpath_polygon = subpath_polygon.buffer(1e-19)
+
+        polygon = polygon.difference(subpath_polygon)
     return polygon
