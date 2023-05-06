@@ -89,6 +89,7 @@ dvc init
 # add gdrive remote
 dvc remote add gdriveremote gdrive://16KL5V5Cbnm_y4EMulPDk1MqYd9vkIwfD
 dvc remote modify gdriveremote gdrive_acknowledge_abuse true # idk why need to do this
+dvc remote default gdriveremote
 # should ask to authenticate
 ```
 
