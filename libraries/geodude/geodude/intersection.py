@@ -538,6 +538,7 @@ def chunked_pairwise_partition_polygons(gdf: gpd.GeoDataFrame, chunk_size: int =
         gdf = gdf.sample(frac=1, replace=False).reset_index(drop=True)
         if verbose:
             print(f"Iteration {iteration_num} complete, {len(gdf)} polygons remaining")
+            print('\n')
     disjoint_gdfs.append(gdf)
 
     gdf = gpd.GeoDataFrame(pd.concat(disjoint_gdfs)).reset_index(drop=True)
