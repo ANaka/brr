@@ -1,4 +1,8 @@
+from typing import List, Union
+
+import geopandas as gpd
 import shapely.geometry as sg
+from shapely import Geometry
 
 
 class Distance(object):
@@ -65,22 +69,69 @@ class Paper(object):
 
 
 def merge_LineStrings(mls_list):
+    if isinstance(mls_list, Geometry):
+        mls_list = mls_list.geoms
+    elif isinstance(mls_list, gpd.GeoDataFrame):
+        mls_list = mls_list.geometry
+    elif isinstance(mls_list, gpd.GeoSeries):
+        mls_list = mls_list.to_list()
     merged_mls = []
     for mls in mls_list:
-        if getattr(mls, "type") == "MultiLineString":
+        if mls.geom_type == "MultiLineString":
             merged_mls += list(mls.geoms)
-        elif getattr(mls, "type") == "LineString":
+        elif mls.geom_type == "LineString":
             merged_mls.append(mls)
     return sg.MultiLineString(merged_mls)
 
 
 def merge_Polygons(mp_list):
+    if isinstance(mp_list, Geometry):
+        mp_list = mp_list.geoms
+    elif isinstance(mp_list, gpd.GeoDataFrame):
+        mp_list = mp_list.geometry
+    elif isinstance(mp_list, gpd.GeoSeries):
+        mp_list = mp_list.to_list()
+
     merged_mps = []
     for mp in mp_list:
-        if type(mp) == list:
-            merged_mps += list(mp)
-        elif getattr(mp, "type") == "MultiPolygon":
-            merged_mps += list(mp)
-        elif getattr(mp, "type") == "Polygon":
+        if mp.geom_type == "MultiPolygon":
+            merged_mps += list(mp.geoms)
+        elif mp.geom_type == "Polygon":
             merged_mps.append(mp)
+        elif isinstance(mp, list):
+            merged_mps += list(mp)
+
     return sg.MultiPolygon(merged_mps)
+
+
+def flatten_geoms(
+    geoms: Union[gpd.GeoDataFrame, gpd.GeoSeries, List[Geometry]],
+    as_gdf: bool = True,
+) -> Union[gpd.GeoDataFrame, List[Geometry]]:
+    if isinstance(geoms, Geometry):
+        if hasattr(geoms, "geoms"):
+            geoms = list(geoms.geoms)
+        else:  # assume Polygon or LineString
+            geoms = [geoms]
+    elif isinstance(geoms, gpd.GeoDataFrame):
+        geoms = list(geoms.geometry.values)
+    elif isinstance(geoms, gpd.GeoSeries):
+        geoms = list(geoms)
+
+    merged_geoms: List[Geometry] = []
+    for geom in geoms:
+        if isinstance(geom, list):
+            merged_geoms.extend(geom)
+        elif hasattr(geom, "geoms"):
+            merged_geoms.extend(list(geom.geoms))
+        elif isinstance(geom, gpd.GeoDataFrame):
+            geoms.extend(geom.geometry.to_list())
+        elif isinstance(geom, gpd.GeoSeries):
+            geoms.extend(geom.to_list())
+        else:
+            merged_geoms.append(geom)
+
+    if as_gdf:
+        return gpd.GeoDataFrame(geometry=merged_geoms)
+    else:
+        return merged_geoms

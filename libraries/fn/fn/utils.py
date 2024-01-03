@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from hashlib import sha1
 from itertools import islice
+from pathlib import Path
 
 
 def overlay(a, **b):
@@ -50,3 +51,9 @@ def _int_or_zero(f):
 
 def sortfx(f):
     return f["date"], f["time"], _int_or_zero(f)
+
+
+FN_ROOT = Path(__file__).parent.parent
+LIBRARIES_ROOT = FN_ROOT.parent
+REPO_ROOT = LIBRARIES_ROOT.parent
+OUTPUTS_ROOT = REPO_ROOT / "outputs"

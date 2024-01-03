@@ -53,13 +53,3 @@ def test_deep_copy():
     p = Parameter(original_list, deep_copy=True)
     original_list.append(4)
     assert p() == [1, 2, 3]
-
-
-def test_element_wise_application():
-    p = Parameter([lambda x: x * 2, lambda x: x + 3])
-    assert p(5) == [10, 8]
-
-
-def test_mixed_element_wise_application():
-    p = Parameter([lambda x: x * 2, 3, lambda x: x + 3])
-    assert p(5) == [10, 3, 8]

@@ -4,7 +4,6 @@ A template with some preferences for a poetry monorepo.
 
 ## Installation
 
-
 ### Set up `poetry` and `pyenv`
 
 - Pyenv setup instructions: [https://github.com/pyenv/pyenv#installation](https://github.com/pyenv/pyenv#installation)
@@ -75,25 +74,24 @@ poetry run pre-commit install
 
 ```
 
+### DVC
 
-### Git LFS
-
-[Git LFS](https://git-lfs.github.com/) to store large files in the repo. To install Git LFS, follow the instructions for your OS:
+We use DVC to store outputs like svgs
 
 ```bash
 
-# linux:
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install git-lfs
-
 # homebrew:
-brew install git-lfs
+brew install dvc
 
-# initialize git lfs
-git lfs install
+# initialize dvc
+dvc init
+
+# add gdrive remote
+dvc remote add gdriveremote gdrive://16KL5V5Cbnm_y4EMulPDk1MqYd9vkIwfD
+dvc remote modify gdriveremote gdrive_acknowledge_abuse true # idk why need to do this
+dvc remote default gdriveremote
+# should ask to authenticate
 ```
-
-`.gitattributes` file should take care of the rest.
 
 ### Installing a subpackage
 
