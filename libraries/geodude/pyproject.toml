@@ -17,12 +17,14 @@ scikit-learn = "^1.2.1"
 vpype = {extras = ["all"], version = "^1.12.1"}
 vsketch = {git = "https://github.com/abey79/vsketch.git"}
 hypothesis = "^6.70.0"
+hydra-zen = "^0.10.0"
 fn = {path = "../fn", develop = true}
 fiona = "1.9"
 geopandas = "^0.12.2"
 hydra-zen = "^0.10.0"
 makefun = "^1.15.1"
 fonttools = "^4.39.3"
+
 
 
 [tool.poetry.group.dev.dependencies]
